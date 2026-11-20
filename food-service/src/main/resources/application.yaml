@@ -3,9 +3,9 @@ spring:
     name: food-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/your_database_name
-    username: your_username
-    password: your_password
+    url: jdbc:postgresql://localhost:5432/foodService_foodie
+    username: postgres
+    password: Aditya@2003#
     driver-class-name: org.postgresql.Driver
     
   jpa:
@@ -16,3 +16,6 @@ spring:
       hibernate:
         format_sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+server:
+  port: 9092
