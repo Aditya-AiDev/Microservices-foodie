@@ -21,6 +21,7 @@ import com.foodie.food_service.entities.FoodType;
 import com.foodie.food_service.repository.FoodCategoryRepo;
 import com.foodie.food_service.repository.FoodItemRepo;
 import com.foodie.food_service.services.FoodItemService;
+import com.foodie.food_service.services.external.RestaurantService;
 
 @Service 
 public class FoodItemServiceImpl implements FoodItemService {
@@ -30,16 +31,16 @@ public class FoodItemServiceImpl implements FoodItemService {
     private final FoodItemRepo itemRepo;
 
     private final RestTemplate restTemplate;
-    
 
-    
+    private RestaurantService restaurantService;
 
     public FoodItemServiceImpl(FoodCategoryRepo categoryRepo, ModelMapper modelMapper, FoodItemRepo itemRepo,
-        RestTemplate restTemplate) {
-                this.categoryRepo = categoryRepo;
-                this.modelMapper = modelMapper;
-                this.itemRepo = itemRepo;
-                this.restTemplate = restTemplate;
+            RestTemplate restTemplate, RestaurantService restaurantService) {
+        this.categoryRepo = categoryRepo;
+        this.modelMapper = modelMapper;
+        this.itemRepo = itemRepo;
+        this.restTemplate = restTemplate;
+        this.restaurantService = restaurantService;
     }
 
     @Override
@@ -55,17 +56,28 @@ public class FoodItemServiceImpl implements FoodItemService {
     @Override
     public FoodItemDto getById(String id) {
         FoodItem foodItem=findOrThrow(id);
-        //call Restaurant-Service by it's URL ---for get single element
-        String restaurantServiceUrl = "http://localhost:9091/api/v1/restaurants/" + foodItem.getRestaurantId();
+        //
+        // //call Restaurant-Service by it's URL ---for get single element
+        // String restaurantServiceUrl = "http://localhost:9091/api/v1/restaurants/" + foodItem.getRestaurantId();
 
-        /////////////////////////////////////////////////////////////////
-        // /////////////////////////call by restTemplate/////////////////
-        //get// ---getForObject
-        RestaurantDto restaurantDto=restTemplate.getForObject(restaurantServiceUrl, RestaurantDto.class);
-        //getAll//---getForEntity
-        //post//
-        //put//
-        /////////
+        // /////////////////////////////////////////////////////////////////
+        // // /////////////////////////call by restTemplate/////////////////
+        // //get// ---getForObject
+        // RestaurantDto restaurantDto=restTemplate.getForObject(restaurantServiceUrl, RestaurantDto.class);
+        // //getAll//---getForEntity
+        // //post//
+        // //put//
+        // /////////
+        //
+
+        ////////////////////////
+        //// Feign client /////
+        /// 
+        RestaurantDto restaurantDto = restaurantService.getById(foodItem.getRestaurantId());
+
+        //
+        //
+        
         FoodItemDto foodItemDto= toDto(foodItem);
         foodItemDto.setRestaurantDto(restaurantDto);
 
@@ -78,15 +90,23 @@ public class FoodItemServiceImpl implements FoodItemService {
         
         List<FoodItem> allFoodItem= itemRepo.findAll();
 
-        //call Restaurant-Service by it's URL ---for getAll
-        String restaurantServiceUrl = "http://localhost:9091/api/v1/restaurants" ;
-        /////////////////////////////////////////////////////////////////
-        // /////////////////////////call by restTemplate/////////////////
-        //getAll// ---getForObject
-        RestaurantDto[] restaurantDtoArray=restTemplate.getForObject(restaurantServiceUrl, RestaurantDto[].class);
-        List<RestaurantDto> restaurantDtoList=Arrays.asList(restaurantDtoArray);
-        /////
+        // //call Restaurant-Service by it's URL ---for getAll
+        // String restaurantServiceUrl = "http://localhost:9091/api/v1/restaurants" ;
+        // /////////////////////////////////////////////////////////////////
+        // // /////////////////////////call by restTemplate/////////////////
+        // //getAll// ---getForObject
+        // RestaurantDto[] restaurantDtoArray=restTemplate.getForObject(restaurantServiceUrl, RestaurantDto[].class);
+        // List<RestaurantDto> restaurantDtoList=Arrays.asList(restaurantDtoArray);
+        // /////
+        // /// 
+
+
+        //////////// Feign client /////////////////
         /// 
+        List<RestaurantDto> restaurantDtoList=restaurantService.getAll();
+        ///
+        /// 
+        
         
         // Map restaurants by ID for quick O(1) matching
         Map<String, RestaurantDto> restaurantMap = restaurantDtoList.stream()
