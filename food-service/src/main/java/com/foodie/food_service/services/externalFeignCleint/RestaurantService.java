@@ -1,4 +1,4 @@
-package com.foodie.food_service.services.external;
+package com.foodie.food_service.services.externalFeignCleint;
 
 import java.util.List;
 

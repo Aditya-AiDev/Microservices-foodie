@@ -4,7 +4,9 @@ import org.modelmapper.ModelMapper;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import com.foodie.food_service.dto.FoodCategoryDto;
 import com.foodie.food_service.dto.FoodItemDto;
@@ -38,5 +40,21 @@ public class AppConfig {
         return new RestTemplate();
 
     }
+
+    @Bean 
+    public RestClient restClient(){
+        return RestClient.builder()
+                        .baseUrl("http://localhost:9091")
+                        .build();
+    }
+
+    @Bean 
+    public WebClient webClient(){
+        return WebClient.builder()
+                        .baseUrl("http://localhost:9091")
+                        .build();
+    }
+
+
 
 }

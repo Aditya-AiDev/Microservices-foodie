@@ -7,9 +7,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.foodie.food_service.dto.FoodCategoryDto;
@@ -21,7 +23,9 @@ import com.foodie.food_service.entities.FoodType;
 import com.foodie.food_service.repository.FoodCategoryRepo;
 import com.foodie.food_service.repository.FoodItemRepo;
 import com.foodie.food_service.services.FoodItemService;
-import com.foodie.food_service.services.external.RestaurantService;
+import com.foodie.food_service.services.externalFeignCleint.RestaurantService;
+import com.foodie.food_service.services.externalRestClient.RestaurantServiceRestClient;
+import com.foodie.food_service.services.externalWebClient.RestaurantsServiceWebClient;
 
 @Service 
 public class FoodItemServiceImpl implements FoodItemService {
@@ -32,16 +36,34 @@ public class FoodItemServiceImpl implements FoodItemService {
 
     private final RestTemplate restTemplate;
 
+    private final WebClient webClient;
+
+    //Feign Client
     private RestaurantService restaurantService;
 
+    //webClient
+    private RestaurantsServiceWebClient restaurantsServiceWebClient;
+
+    //rest client
+    private RestaurantServiceRestClient restaurantServiceRestClient;
+
+    
+
+    @Autowired 
     public FoodItemServiceImpl(FoodCategoryRepo categoryRepo, ModelMapper modelMapper, FoodItemRepo itemRepo,
-            RestTemplate restTemplate, RestaurantService restaurantService) {
+            RestTemplate restTemplate, WebClient webClient, RestaurantService restaurantService,
+            RestaurantsServiceWebClient restaurantsServiceWebClient,
+            RestaurantServiceRestClient restaurantServiceRestClient) {
         this.categoryRepo = categoryRepo;
         this.modelMapper = modelMapper;
         this.itemRepo = itemRepo;
         this.restTemplate = restTemplate;
+        this.webClient = webClient;
         this.restaurantService = restaurantService;
+        this.restaurantsServiceWebClient = restaurantsServiceWebClient;
+        this.restaurantServiceRestClient = restaurantServiceRestClient;
     }
+
 
     @Override
     public FoodItemDto create(FoodItemDto dto) {
@@ -53,6 +75,8 @@ public class FoodItemServiceImpl implements FoodItemService {
         return toDto(itemRepo.save(item));
     }
 
+
+
     @Override
     public FoodItemDto getById(String id) {
         FoodItem foodItem=findOrThrow(id);
@@ -60,8 +84,9 @@ public class FoodItemServiceImpl implements FoodItemService {
         // //call Restaurant-Service by it's URL ---for get single element
         // String restaurantServiceUrl = "http://localhost:9091/api/v1/restaurants/" + foodItem.getRestaurantId();
 
-        // /////////////////////////////////////////////////////////////////
-        // // /////////////////////////call by restTemplate/////////////////
+        //1.// /////////////////////////////////////////////////////////////////
+        // // //////////////////////// restTemplate /////////////////
+        ///////////////////////////////////////////////////////////////////////
         // //get// ---getForObject
         // RestaurantDto restaurantDto=restTemplate.getForObject(restaurantServiceUrl, RestaurantDto.class);
         // //getAll//---getForEntity
@@ -70,13 +95,37 @@ public class FoodItemServiceImpl implements FoodItemService {
         // /////////
         //
 
-        ////////////////////////
-        //// Feign client /////
+        //2.// /////////////////////////////////////////////
+        /// rest client /////////////////// 
         /// 
-        RestaurantDto restaurantDto = restaurantService.getById(foodItem.getRestaurantId());
+        // RestaurantDto restaurantDto = restaurantServiceRestClient.getById(foodItem.getRestaurantId());
+        //
 
-        //
-        //
+        //3.// ////////////////////////
+        // //// Feign client /////
+        // /// //////////////////
+        // RestaurantDto restaurantDto = restaurantService.getById(foodItem.getRestaurantId());
+
+        // //
+        // //
+
+        //4.// ////////////////////////
+        // /// web Client ////
+        // /// ///////////////////
+        // RestaurantDto restaurantDto = webClient.get()
+        //                                         .uri("/api/v1/restaurants/{id}", foodItem.getRestaurantId())
+        //                                         .retrieve()
+        //                                         .bodyToMono(RestaurantDto.class)
+        //                                         .block();
+
+        // ////////
+        // /// ///// or ///////////////////////
+        RestaurantDto restaurantDto = restaurantsServiceWebClient.getById(foodItem.getRestaurantId());
+
+
+        
+
+
         
         FoodItemDto foodItemDto= toDto(foodItem);
         foodItemDto.setRestaurantDto(restaurantDto);
@@ -92,8 +141,11 @@ public class FoodItemServiceImpl implements FoodItemService {
 
         // //call Restaurant-Service by it's URL ---for getAll
         // String restaurantServiceUrl = "http://localhost:9091/api/v1/restaurants" ;
-        // /////////////////////////////////////////////////////////////////
+
+        //1.// /////////////////////////////////////////////////////////////////
         // // /////////////////////////call by restTemplate/////////////////
+        ///
+        /// 
         // //getAll// ---getForObject
         // RestaurantDto[] restaurantDtoArray=restTemplate.getForObject(restaurantServiceUrl, RestaurantDto[].class);
         // List<RestaurantDto> restaurantDtoList=Arrays.asList(restaurantDtoArray);
@@ -101,13 +153,27 @@ public class FoodItemServiceImpl implements FoodItemService {
         // /// 
 
 
-        //////////// Feign client /////////////////
-        /// 
-        List<RestaurantDto> restaurantDtoList=restaurantService.getAll();
+        //2.// ///////////////////////////////////////////////
+        /// rest client /////////////////// 
         ///
-        /// 
+        // List<RestaurantDto> restaurantDtoList = restaurantServiceRestClient.getAll();
+        ///////////
+
+        //3.// //////////// Feign client /////////////////
+        // /// 
+        // List<RestaurantDto> restaurantDtoList=restaurantService.getAll();
+        // ///
+        // /// 
         
-        
+        //4.// //////////////////////////////////////////////////
+        // ///    Web Client //////////////////////////////
+        // /// 
+        List<RestaurantDto> restaurantDtoList = restaurantsServiceWebClient.getAll();
+        // ////////
+        // /// 
+
+
+
         // Map restaurants by ID for quick O(1) matching
         Map<String, RestaurantDto> restaurantMap = restaurantDtoList.stream()
                                                                     .collect(Collectors.toMap(RestaurantDto :: getId, r -> r));
