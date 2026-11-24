@@ -9,9 +9,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import com.foodie.food_service.config.AppConstants;
 import com.foodie.food_service.dto.RestaurantDto;
 
-@FeignClient (name = "restaurant-service", url = "http://localhost:9091")
+// @FeignClient (name = "restaurant-service", url = "http://localhost:9091")
+@FeignClient (name = AppConstants.RESTAURANT_SERVICE_NAME , url = AppConstants.RESTAURANT_SERVICE_URL)
 public interface RestaurantService {
 
     ////Restaurant-Service ---for getting single element
